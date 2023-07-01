@@ -65,11 +65,11 @@ const excludedSets = [
 ];
 
 const excludedSetTypes = [
-    'token',
+    // 'token',
 ];
 
 const excludedLayouts = [
-    'token',
+    // 'token',
     'double_faced_token',
     'art_series',
 ];
@@ -78,9 +78,9 @@ const stripped = cards.filter(card => {
     // Process the exclusions.
     return includedSets.includes(card.set) ||
         ((!card.oversized || card.layout === 'planar')
-        && !excludedSetTypes.includes(card.set_type)
-        && !excludedLayouts.includes(card.layout)
-        && !excludedSets.includes(card.set));
+            && !excludedSetTypes.includes(card.set_type)
+            && !excludedLayouts.includes(card.layout)
+            && !excludedSets.includes(card.set));
 }).flatMap(card => {
     // Do some handling for the stupid Reversible Card bullshit.
     if (card.layout === 'reversible_card') {
@@ -90,7 +90,7 @@ const stripped = cards.filter(card => {
         ];
     }
 
-    return [ card ];
+    return [card];
 }).map(card => {
     // Then set the high level data necessary to organize the remaining cards.
     return {
@@ -107,8 +107,8 @@ const stripped = cards.filter(card => {
         isDigital: card.digital,
         isPromo: !customNotPromoSets.includes(card.set) && (card.promo || card.promo_types || customPromoSetTypes.includes(card.set_type) || customPromoSets.includes(card.set)),
         imageUris: {
-            front: `https://api.scryfall.com/cards/${card.set}/${card.collector_number}?format=image&version=border_crop&face=front`,
-            back: card.card_faces?.[1]?.image_uris ? `https://api.scryfall.com/cards/${card.set}/${card.collector_number}?format=image&version=border_crop&face=back` : undefined,
+            front: `https://api.scryfall.com/cards/${card.set}/${card.collector_number}?format=image&version=png&face=front`,
+            back: card.card_faces?.[1]?.image_uris ? `https://api.scryfall.com/cards/${card.set}/${card.collector_number}?format=image&version=png&face=back` : undefined,
         }
     };
 });
