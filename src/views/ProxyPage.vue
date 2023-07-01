@@ -11,14 +11,18 @@
                     </div>
 
                     <div class="form-group btn-group btn-group-block">
-                        <button id="submit-decklist" class="btn btn-primary" @click="loadCardList()">{{ cards.length ? 'Update' : 'Submit' }}</button>
-                        <button id="print" class="btn btn-block tooltip" @click="printList" :disabled="cards.length == 0" :data-tooltip="`${cardCountWhenPrinting.count} of ${cardCountWhenPrinting.bound} slots consumed.\nAssuming an 8.5x11 paper size.`"><span class="icon-print"></span> Print</button>
+                        <button id="submit-decklist" class="btn btn-primary" @click="loadCardList()">{{ cards.length ?
+                            'Update' : 'Submit' }}</button>
+                        <button id="print" class="btn btn-block tooltip" @click="printList" :disabled="cards.length == 0"
+                            :data-tooltip="`${cardCountWhenPrinting.count} of ${cardCountWhenPrinting.bound} slots consumed.\nAssuming an 8.5x11 paper size.`"><span
+                                class="icon-print"></span> Print</button>
                     </div>
 
                     <div class="form-group btn-group btn-group-block">
                         <div id="slot-usage" class="bar">
                             <template v-for="index in 9" :key="index">
-                                <div :class="`bar-item ${index <= cardCountWhenPrinting.overflow ? 'consumed' : 'unconsumed'}`" role="progressbar"></div>
+                                <div :class="`bar-item ${index <= cardCountWhenPrinting.overflow ? 'consumed' : 'unconsumed'}`"
+                                    role="progressbar"></div>
                             </template>
                         </div>
                     </div>
@@ -70,9 +74,19 @@
 
                         <div class="column col-12 divider"></div>
 
-                        <div class="column col-12">
+                        <!-- <div class="row">
+                            <div class="col-6">
+                                <button class="btn p-centered" @click="$refs.helpModal.show()">Help?</button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn p-centered">Download</button>
+                            </div>
+                        </div> -->
+                        <div class="form-group btn-group btn-group-block">
                             <button class="btn p-centered" @click="$refs.helpModal.show()">Help?</button>
+                            <button class="btn p-centered" @click="downloadCardList()">Download</button>
                         </div>
+
 
                         <div class="column col-12 divider"></div>
                     </div>
@@ -84,7 +98,8 @@
                     <div class="empty-icon">
                         <i class="icon icon-3x icon-search"></i>
                     </div>
-                    <p class="empty-title h5" style="max-width: 25rem;">"I welcome and seek your ideas, but do not bring me small ideas; bring me big ideas to match our future."</p>
+                    <p class="empty-title h5" style="max-width: 25rem;">"I welcome and seek your ideas, but do not bring me
+                        small ideas; bring me big ideas to match our future."</p>
                     <p class="empty-subtitle">- Arnold Schwarzenegger</p>
                 </div>
 
@@ -97,12 +112,17 @@
                 </div>
 
                 <div class="cards columns">
-                    <div v-for="(card, index) in cards" :key="index" class="card-select column col-3 col-sm-6 mt-2" v-show="shouldShowCard(card)">
+                    <div v-for="(card, index) in cards" :key="index" class="card-select column col-3 col-sm-6 mt-2"
+                        v-show="shouldShowCard(card)">
                         <div class="p-relative">
-                            <ImageLoader class="card-image img-responsive" :src="card.selectedOption.url" placeholder="./card_back.jpg" :alt="card.name" />
-                            <span class="card-quantity bg-primary text-light docs-shape s-rounded centered">{{ card.quantity }}x</span>
-                            <select class="form-select select-sm mt-2" v-model="card.selectedOption" @change="updateSessionSet(card.name, card.selectedOption)">
-                                <option v-for="(set, index) in card.setOptions" :value="set" :key="index" v-show="shouldShowSetOption(card, set)">{{ set.name }}</option>
+                            <ImageLoader class="card-image img-responsive" :src="card.selectedOption.url"
+                                placeholder="./card_back.jpg" :alt="card.name" />
+                            <span class="card-quantity bg-primary text-light docs-shape s-rounded centered">{{ card.quantity
+                            }}x</span>
+                            <select class="form-select select-sm mt-2" v-model="card.selectedOption"
+                                @change="updateSessionSet(card.name, card.selectedOption)">
+                                <option v-for="(set, index) in card.setOptions" :value="set" :key="index"
+                                    v-show="shouldShowSetOption(card, set)">{{ set.name }}</option>
                             </select>
                         </div>
                     </div>
@@ -116,7 +136,8 @@
     <div id="print-content" :class="'scale-' + config.scale">
         <template v-for="(card, index) in cards" :key="index">
             <img v-for="n in card.quantity" :key="n" :src="card.selectedOption.url" v-show="shouldShowCard(card)">
-            <img v-for="n in card.quantity" :key="n" :src="card.selectedOption.urlBack" v-show="shouldShowCard(card, 'back')">
+            <img v-for="n in card.quantity" :key="n" :src="card.selectedOption.urlBack"
+                v-show="shouldShowCard(card, 'back')">
         </template>
     </div>
 </template>
@@ -126,6 +147,8 @@ import { normalizeCardName } from '../helpers/CardNames.mjs';
 import ImageLoader from '../components/ImageLoader.vue';
 import HelpModal from '../components/HelpModal.vue';
 import ArnoldsApproval from '../components/ArnoldsApproval';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 // Chunk out the card list for quasi-lazy loading. Or at least loading that doesn't block the page rendering.
 const ScryfallDatasetAsync = () => import('../../data/cards-minimized.json');
@@ -276,7 +299,7 @@ export default {
                     name: cardName,
                     inputName: inputCardName,
                     setOptions: cardLookup.map(option => {
-                        let [ setCode, setNumber ] = option.s.split('|');
+                        let [setCode, setNumber] = option.s.split('|');
                         return {
                             name: `${this.sets[setCode]} (${setNumber})`,
                             url: option.f,
@@ -299,6 +322,172 @@ export default {
 
                 this.cards.push(options);
             }
+        },
+        async downloadCardList() {
+
+            // async function downloadImage(imageSrc, index) {
+            //     const image = await fetch(imageSrc)
+            //     const imageBlog = await image.blob()
+            //     const imageURL = URL.createObjectURL(imageBlog)
+
+            //     const link = document.createElement('a')
+            //     link.href = imageURL
+            //     link.download = 'front' + index + '.png'
+            //     document.body.appendChild(link)
+            //     link.click()
+            //     document.body.removeChild(link)
+            // }
+
+            // console.log("download started")
+
+            // // Iterate over the images and save them
+            // this.cards.forEach(function (image, index) {
+            //     var url = image.selectedOption.url;
+            //     // console.log(index, url);
+
+            //     downloadImage(url, index);
+            // });
+            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+            const zip = new JSZip();
+
+            const promises = this.cards.map((image, index) => {
+                return fetch(image.selectedOption.url)
+                    .then((response) => response.blob())
+                    .then((blob) => {
+                        // Add image file to the zip folder
+                        zip.file(`image${index}.png`, blob);
+                    });
+            });
+
+            await Promise.all(promises);
+
+            zip.generateAsync({ type: 'blob' }).then((content) => {
+                // Save the zip file
+                saveAs(content, 'front.zip');
+            });
+
+            const zip2 = new JSZip();
+
+            const promises2 = this.cards.map((image, index) => {
+                const url = image.selectedOption.urlBack ?? "https://cdn.shopify.com/s/files/1/0713/8512/1059/files/OfficialCardBack_watermarked_bfe2f59b-3580-4b3c-a462-2ad5059ac956.png?v=1682889389&width=1946";
+                return fetch(url)
+                    .then((response) => response.blob())
+                    .then((blob) => {
+                        // Add image file to the zip folder
+                        zip2.file(`image${index}.png`, blob);
+                    });
+            });
+
+            await Promise.all(promises2);
+
+            zip2.generateAsync({ type: 'blob' }).then((content) => {
+                // Save the zip file
+                saveAs(content, 'back.zip');
+            });
+
+
+            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // Create two JSZip instances for the two zip files
+            // var zip1 = new JSZip();
+            // var zip2 = new JSZip();
+
+            // // Create a new folder in each zip file
+            // var folder1 = zip1.folder('front');
+            // var folder2 = zip2.folder('front');
+
+            // // Promises to track completion of image processing for each zip
+            // var promises1 = [];
+            // var promises2 = [];
+
+            // // Iterate over the images and process them
+            // this.cards.forEach(function (image, index) {
+            //     var img = new Image();
+
+            //     var promise1 = new Promise(function (resolve) {
+            //         img.onload = function () {
+            //             // Create a new canvas element
+            //             var canvas = document.createElement('canvas');
+            //             var context = canvas.getContext('2d');
+
+            //             // Calculate the new width and height with the border
+            //             var newWidth = img.width + 144; // 72px on each side
+            //             var newHeight = img.height + 144; // 72px on each side
+
+            //             // Set the canvas dimensions
+            //             canvas.width = newWidth;
+            //             canvas.height = newHeight;
+
+            //             // Fill the canvas with a black border
+            //             context.fillStyle = 'black';
+            //             context.fillRect(0, 0, newWidth, newHeight);
+
+            //             // Draw the image on the canvas with the border
+            //             context.drawImage(img, 72, 72, img.width, img.height);
+
+            //             // Convert the canvas to a Blob object
+            //             canvas.toBlob(function (blob) {
+            //                 // Generate a unique filename for each image
+            //                 var filename = 'image' + index + '.png';
+
+            //                 // Add the image file to the folder in the zip
+            //                 folder1.file(filename, blob);
+
+            //                 // Resolve the promise
+            //                 resolve();
+            //             }, 'image/png');
+            //         };
+
+            //         // Set the source of the image to the URL
+            //         img.src = image.selectedOption.url;
+            //     });
+
+            //     var promise2 = new Promise(function (resolve) {
+            //         var imgB = new Image();
+            //         imgB.onload = function () {
+            //             var canvas = document.createElement('canvas');
+            //             var context = canvas.getContext('2d');
+            //             var newWidth = imgB.width + 144; // 72px on each side
+            //             var newHeight = imgB.height + 144; // 72px on each side
+            //             canvas.width = newWidth;
+            //             canvas.height = newHeight;
+            //             context.fillStyle = 'black';
+            //             context.fillRect(0, 0, newWidth, newHeight);
+            //             context.drawImage(imgB, 72, 72, imgB.width, imgB.height);
+            //             canvas.toBlob(function (blob) {
+            //                 var filename = 'image' + index + '.png';
+            //                 folder2.file(filename, blob);
+            //                 resolve();
+            //             }, 'image/png');
+            //         };
+            //         if (image.selectedOption.urlBack) {
+            //             imgB.src = image.selectedOption.urlBack;
+            //         }
+            //         else {
+            //             imgB.src = "https://cdn.shopify.com/s/files/1/0713/8512/1059/files/OfficialCardBack_watermarked_bfe2f59b-3580-4b3c-a462-2ad5059ac956.png?v=1682889389&width=1946";
+            //         }
+            //     });
+
+            //     promises1.push(promise1);
+            //     promises2.push(promise2);
+            // });
+
+            // // Wait for all image processing promises to complete for each zip
+            // Promise.all(promises1).then(function () {
+            //     // Generate the first zip file
+            //     zip1.generateAsync({ type: 'blob' }).then(function (content) {
+            //         // Save the first zip file
+            //         saveAs(content, 'images1.zip');
+            //     });
+            // });
+
+            // Promise.all(promises2).then(function () {
+            //     // Generate the second zip file
+            //     zip2.generateAsync({ type: 'blob' }).then(function (content) {
+            //         // Save the second zip file
+            //         saveAs(content, 'images2.zip');
+            //     });
+            // });
         },
     },
 }
@@ -382,13 +571,15 @@ export default {
         all: initial;
     }
 
-    html, html * {
+    html,
+    html * {
         all: unset;
         font-size: 0 !important;
         line-height: 0 !important;
     }
 
-    .section, header {
+    .section,
+    header {
         display: none !important;
     }
 
